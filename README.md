@@ -69,6 +69,6 @@
    ## License
    The project is licensed under the [MIT License](LICENSE).
 
-    ## Contact
-    - Rolf W. Eckertz
-    - re2012@t-online.de
+   ## Contact
+   - Rolf W. Eckertz
+   - re2012@t-online.de
