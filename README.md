@@ -38,7 +38,7 @@
 
    ## Sources
    Data from the following sources can be controlled and analyzed
-   - [ICOS](https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}) {:target="_blank"} Integrated Carbon Observation System
+   - <a href="https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}" target="_blank">ICOS</a> Integrated Carbon Observation System
 
    ## Features
    - data files are analzed in steps
