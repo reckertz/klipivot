@@ -25,11 +25,11 @@
    - node.js with express
    - jQuery and async by Caolan are used
    - Libraries
-   - - PivotTables
-   - - DataTables
-   - - ChartJS
-   - - Hilitor
-   - - FileSaver
+     - PivotTables
+     - DataTables
+     - ChartJS
+     - Hilitor
+     - FileSaver
    - VSCode
 
    ## Contributing
