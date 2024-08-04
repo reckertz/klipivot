@@ -1,0 +1,15 @@
+{
+  "name": "klipivot",
+  "version": "1.0.0",
+  "description": "navigate directorties, choose datafile, load datafile to browser, parse datafile, show in pivotcontrol",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
+  },
+  "author": "Rolf W. Eckertz",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^3.2.5",
+    "express": "^4.19.2"
+  }
+}
