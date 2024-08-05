@@ -17,7 +17,7 @@
    npm install has to be run before starting the application from the installation folder
    with node server.js
 
-   a small change in the code of klipivot.js is necessary to assign the specific root-directory your need:
+   a small change in the code of klipivot.js is necessary to assign the specific root-directory you need:
    ```
         let path = klipivot.getCookie("datapath");
         if (path === null) {
@@ -49,7 +49,7 @@
 
    ## Sources
    Data from the following sources can be controlled and analyzed
-   - <a href="https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}" target="_blank">ICOS</a> Integrated Carbon Observation System, on the page you have to choose the CO2-Data hourly
+   - <a href="https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}" target="_blank" rel="noreferrer noopener">ICOS</a> Integrated Carbon Observation System, on the page you have to choose the CO2-Data hourly
    - more to come 
      - ICOS meteorological data
      - NOAA GML Global Monitoring Laboratory with hourly CO2-Data and meteorological data
