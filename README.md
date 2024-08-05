@@ -36,7 +36,7 @@
    When klipivot is envoked from the browser with http://localhost:3000/klipivot.html
    the following steps are available:
    - Initially the contents of the data-Directory is shown
-     - a cookie can be used to define the datapath you need: datapath	["c:","Projekte","klimaapp","public","data"]
+     - if the initial path must be changed, that has to be done in code (see above)
    - the user can navigate to subdirectories or choose files
    - when a file is chosen, the following options are presented
      - Pivot-Tab shows the pivot-control where you can control, filter and aggregate data
@@ -49,11 +49,10 @@
 
    ## Sources
    Data from the following sources can be controlled and analyzed
-   - <a href="https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}" target="_blank" rel="noreferrer noopener">ICOS</a> Integrated Carbon Observation System, on the page you have to choose the CO2-Data hourly
-   - more to come 
-     - ICOS meteorological data
-     - NOAA GML Global Monitoring Laboratory with hourly CO2-Data and meteorological data
-     - GHCN Global Historical Climatology Network with hourly data
+   - <a href="https://data.icos-cp.eu/portal/#{%22filterCategories%22:{%22level%22:[1,2],%22theme%22:[%22atmosphere%22],%22project%22:[%22icos%22]}}">ICOS</a> Integrated Carbon Observation System, on the page you have to choose the CO2-Data hourly
+  - <a href=https://data.icos-cp.eu/portal/#%7B%22filterCategories%22%3A%7B%22project%22%3A%5B%22icos%22%5D%2C%22stationclass%22%3A%5B%22ICOS%22%5D%2C%22theme%22%3A%5B%22atmosphere%22%5D%2C%22type%22%3A%5B%22atcMtoL2DataObject%22%5D%7D%7D>ICOS</a> Integrated Carbon Observation System, on the page you have to choose the Meteo-Data hourly
+  - <a href=https://gml.noaa.gov/aftp/data/greenhouse_gases/co2/in-situ/surface/>NOAA-CO2</a>NOAA GML Global Monitoring Laboratory with hourly CO2-Data
+  - <a href=https://gml.noaa.gov/aftp/data/meteorology/in-situ/>NOAA-Meteo</a>NOAA GML Global Monitoring Laboratory with hourly Meteo-Data
 
    ## Features
    - data files are analzed in steps

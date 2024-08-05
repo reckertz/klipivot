@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Parse incoming request bodies in JSON format
 app.use(express.json({
-    limit: '5mb'
+    limit: '150mb'
 })); // Increase the limit to 5MB
 
 

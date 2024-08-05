@@ -26,7 +26,7 @@
 
         $(".col1of2").css("height", $(window).height() + 'px');
         $(".col2of2").css("height", $(window).height() + 'px');
-        debugger;
+        Chart.defaults.font.weight = "bold";
         let path = klipivot.getCookie("datapath");
         if (path === null) {
             path = JSON.stringify(["c:", "Projekte", "klimaapp", "public", "data"]);
@@ -46,8 +46,9 @@
     klipivot.getFiletype = function (filename) {
         // Datei bzw. Kandidat für Datei
         let filetypes = [{
+                sample: "ICOS_ATC_L2_L2-2024.1_KIT_30.0_CTS.CO2",
                 source: "ICOSCO2H",
-                startsWith: "ICOS_ATC",
+                startsWith: "ICOS_ATC_L2",
                 endsWith: "_CTS.CO2",
                 metaRule: "#",
                 headerRule: "last#",
@@ -61,7 +62,25 @@
                 metaRule: "#",
                 headerRule: "last#",
                 columnSeparator: ";"
-            }
+            },
+            {
+                sample: "co2_mlo_surface-insitu_1_ccgg_HourlyData.txt",
+                source: "NOAACO2H",
+                startsWith: "co2_",
+                endsWith: "_ccgg_HourlyData.txt",
+                metaRule: "#",
+                headerRule: "", // erste Zeile ohne #
+                columnSeparator: " " // Blank, gewöhnungsbedürftig
+            },
+            {
+                sample: "met_mlo_insitu_1_obop_hour_2021.txt",
+                source: "NOAAMETH",
+                startsWith: "met_",
+                endsWith: ".txt",
+                metaRule: "",
+                headerRule: "", // erste Zeile ohne #
+                columnSeparator: " " // Spezielle Aufteilung, dediziert realisiert
+            },
         ];
         let filesource = "";
         let color = "lightsteelblue";
@@ -79,6 +98,7 @@
             if (hit === true) {
                 filesource = parms.source;
                 color = "lightgreen";
+                break;
             }
         }
         return {
@@ -240,7 +260,6 @@
             //const data = fetchFileData(path.join(file.filepath, file.filename));
             //createPivotTable(data);
             // Analyse
-            klipivot.showTabs();
             let fullfilepath = $(this).attr("filepath") + $(this).attr("filename");
             let jqxhr = $.ajax({
                 method: "GET",
@@ -275,7 +294,8 @@
         // https://www.w3schools.com/howto/howto_js_tabs.asp
         $(".col2of2")
             .append($("<div/>", {
-                    class: "tab"
+                    class: "tab",
+                    id: "klipivottab0"
                 })
                 .append($("<button/>", {
                     class: "tablinks",
@@ -362,6 +382,7 @@
         async.waterfall([
                 function (cb1200) {
                     let ret = {};
+                    klipivot.showTabs();
                     $("#klipivottab1").children().remove();
                     $("#klipivottab1")
                         .append($("<div/>", {
@@ -425,10 +446,18 @@
                     return;
                 },
                 function (ret, cb1220) {
+                    debugger;
                     let fileContent = r1.fileContent;
                     let source = r1.source;
                     let fullfilename = r1.fullfilename;
                     let filename = r1.filename;
+                    $("#klipivottab0").attr("source", source);
+                    $("#klipivottab0").attr("fullfilename", fullfilename);
+                    $("#klipivottab0").attr("filename", filename);
+                    $("#klipivottab0")
+                        .append($("<button/>", {
+                            html: "<b>" + source + " - " + filename + "</b>"
+                        }));
                     let filetype = {};
                     let lines = fileContent.split(/\r\n|\r|\n/);
                     ret.records = [];
@@ -437,7 +466,6 @@
                         for (let iline = 0; iline < lines.length - 1; iline++) {
                             if (lines[iline].startsWith("#") && !lines[iline + 1].startsWith("#")) {
                                 fields = lines[iline].substring(1).split(";");
-
                                 for (let irec = iline + 1; irec < lines.length; irec++) {
                                     let datas = lines[irec].split(";");
                                     let record = {};
@@ -447,16 +475,104 @@
                                     ret.records.push(record);
                                 }
                                 pivotrecords = [];
-                                debugger;
-                                gblpivot = $("#myreport").pivotUI(
-                                    ret.records, {
-                                        rows: [],
-                                        cols: [],
-                                        vals: []
-                                    });
+
+                                let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                                if (pivotConfig === null) {
+                                    gblpivot = $("#myreport").pivotUI(
+                                        ret.records, {
+                                            rows: [],
+                                            cols: [],
+                                            vals: []
+                                        });
+                                } else {
+                                    pivotConfig = JSON.parse(pivotConfig);
+                                    gblpivot = $("#myreport").pivotUI(
+                                        ret.records, {
+                                            rows: pivotConfig.rows,
+                                            cols: pivotConfig.cols,
+                                            vals: pivotConfig.vals,
+                                            exclusions: pivotConfig.exclusions,
+                                            inclusions: pivotConfig.inclusions,
+                                            inclusionsInfo: pivotConfig.inclusionsInfo,
+                                        });
+                                }
                                 break;
                             }
                         }
+                    } else if (source === "ICOSMETH") {
+                        klipivot.prepICOSMETH(lines, ret);
+                        pivotrecords = [];
+                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                        if (pivotConfig === null) {
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: [],
+                                    cols: [],
+                                    vals: []
+                                });
+                        } else {
+                            pivotConfig = JSON.parse(pivotConfig);
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: pivotConfig.rows,
+                                    cols: pivotConfig.cols,
+                                    vals: pivotConfig.vals,
+                                    exclusions: pivotConfig.exclusions,
+                                    inclusions: pivotConfig.inclusions,
+                                    inclusionsInfo: pivotConfig.inclusionsInfo,
+                                });
+                        }
+                    } else if (source === "NOAACO2H") {
+                        klipivot.prepNOAACO2H(lines, ret);
+                        pivotrecords = [];
+                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                        if (pivotConfig === null) {
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: [],
+                                    cols: [],
+                                    vals: []
+                                });
+                        } else {
+                            pivotConfig = JSON.parse(pivotConfig);
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: pivotConfig.rows,
+                                    cols: pivotConfig.cols,
+                                    vals: pivotConfig.vals,
+                                    exclusions: pivotConfig.exclusions,
+                                    inclusions: pivotConfig.inclusions,
+                                    inclusionsInfo: pivotConfig.inclusionsInfo,
+                                });
+                        }
+
+                    } else if (source === "NOAAMETH") {
+                        klipivot.prepNOAAMETH(lines, ret);
+                        pivotrecords = [];
+                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                        if (pivotConfig === null) {
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: [],
+                                    cols: [],
+                                    vals: []
+                                });
+                        } else {
+                            pivotConfig = JSON.parse(pivotConfig);
+                            gblpivot = $("#myreport").pivotUI(
+                                ret.records, {
+                                    rows: pivotConfig.rows,
+                                    cols: pivotConfig.cols,
+                                    vals: pivotConfig.vals,
+                                    exclusions: pivotConfig.exclusions,
+                                    inclusions: pivotConfig.inclusions,
+                                    inclusionsInfo: pivotConfig.inclusionsInfo,
+                                });
+                        }
+
+                    } else {
+                        source = "?";
+
                     }
                     cb1220(null, ret);
                     return
@@ -571,12 +687,167 @@
     };
 
 
+
+    /**
+     * klipivot.prepICOSMETH - lines aufbereiten zu ret.records
+     * funktioniert wie ICOSCO2H (!)
+     * @param {*} lines 
+     * @param {*} ret mit source, filename, 
+     */
+    klipivot.prepICOSMETH = function (lines, ret) {
+        let fields = [];
+        ret.records = [];
+        for (let iline = 0; iline < lines.length - 1; iline++) {
+            if (lines[iline].startsWith("#") && !lines[iline + 1].startsWith("#")) {
+                fields = lines[iline].substring(1).split(";");
+                for (let irec = iline + 1; irec < lines.length; irec++) {
+                    let datas = lines[irec].split(";");
+                    let record = {};
+                    fields.forEach(function (field, ifield) {
+                        record[field] = datas[ifield];
+                    });
+                    ret.records.push(record);
+                }
+            }
+        }
+    };
+
+
+
+    /**
+     * klipivot.prepNOAACO2H - lines aufbereiten zu ret.records
+     * funktioniert wie ICOSCO2H (!) aber Blank-Separierung
+     * und header in der ersten Zeile ohne #
+     * @param {*} lines 
+     * @param {*} ret mit source, filename, 
+     */
+    klipivot.prepNOAACO2H = function (lines, ret) {
+        let fields = [];
+        ret.records = [];
+        if (lines.length < 2001) {
+            for (let iline = 0; iline < lines.length - 1; iline++) {
+                if (!lines[iline].startsWith("#")) {
+                    fields = lines[iline].substring(1).split(" ");
+                    for (let irec = iline + 1; irec < lines.length; irec++) {
+                        let datas = lines[irec].split(" ");
+                        let record = {};
+                        fields.forEach(function (field, ifield) {
+                            record[field] = datas[ifield];
+                        });
+                        ret.records.push(record);
+                    }
+                    break;
+                }
+            }
+        } else {
+            for (let iline = 0; iline < 1000; iline++) {
+                if (!lines[iline].startsWith("#")) {
+                    fields = lines[iline].substring(1).split(" ");
+                    // erste 1000 Sätze bereitstellen
+                    let von1 = iline + 1;
+                    let bis1 = iline + 1 + 1000;
+                    for (let irec = von1; irec < bis1; irec++) {
+                        let datas = lines[irec].split(" ");
+                        let record = {};
+                        fields.forEach(function (field, ifield) {
+                            record[field] = datas[ifield];
+                        });
+                        ret.records.push(record);
+                    }
+                    // letzte 1000 Sätze bereitstellen
+                    let von2 = lines.length - 1000 - 1;
+                    let bis2 = lines.length;
+                    for (let irec = von2; irec < bis2; irec++) {
+                        let datas = lines[irec].split(" ");
+                        let record = {};
+                        fields.forEach(function (field, ifield) {
+                            record[field] = datas[ifield];
+                        });
+                        ret.records.push(record);
+                    }
+                    break;
+                }
+            }
+        }
+    };
+
+    /**
+     * klipivot.prepNOAAMETH - lines aufbereiten zu ret.records
+     * funktioniert wie ICOSCO2H (!) aber spezielle Satzbeschreibung aus README
+     * und keine Header-Zeile!!! sowie keine Metadaten
+     * @param {*} lines 
+     * @param {*} ret mit source, filename, 
+     */
+    klipivot.prepNOAAMETH = function (lines, ret) {
+        let datafields = [];
+        datafields.push([1, "SITE CODE", "station"]);
+        datafields.push([2, "YEAR", "year"]);
+        datafields.push([3, "MONTH", "month"]);
+        datafields.push([4, "DAY", "day"]);
+        datafields.push([5, "HOUR", "hour"]);
+        datafields.push([6, "WIND DIRECTION", "wd"]);
+        datafields.push([7, "WIND SPEED", "ws"]);
+        datafields.push([8, "WIND STEADINESS FACTOR", "wsf"]);
+        datafields.push([9, "BAROMETRIC PRESSURE", "ap"]);
+        datafields.push([10, "TEMPERATURE at 2 Meters", "tt60_0002"]);
+        datafields.push([11, "TEMPERATURE at 10 Meters", "tt60_0010"]);
+        datafields.push([12, "TEMPERATURE at Tower Top", "tt60_TOP"]);
+        datafields.push([13, "RELATIVE HUMIDITY", "rh"]);
+        datafields.push([14, "PRECIPITATION INTENSITY", "pi"]);
+
+        ret.records = [];
+        if (lines.length < 2001) {
+            for (let irec = 0; irec < lines.length; irec++) {
+                let datas = lines[irec].split(/\s+/);
+                let record = {};
+                datafields.forEach(function (fieldparms, ifield) {
+                    record[fieldparms[2]] = datas[ifield];
+                });
+                ret.records.push(record);
+            }
+        } else {
+            for (let iline = 0; iline < 1000; iline++) {
+                let von1 = iline + 1;
+                let bis1 = iline + 1 + 1000;
+                for (let irec = von1; irec < bis1; irec++) {
+                    let datas = lines[irec].split(/\s+/);
+                    let record = {};
+                    datafields.forEach(function (fieldparms, ifield) {
+                        record[fieldparms[2]] = datas[ifield];
+                    });
+                    ret.records.push(record);
+                }
+                // letzte 1000 Sätze bereitstellen
+                let von2 = lines.length - 1000 - 1;
+                let bis2 = lines.length;
+                for (let irec = von2; irec < bis2; irec++) {
+                    let datas = lines[irec].split(/\s+/);
+                    let record = {};
+                    datafields.forEach(function (fieldparms, ifield) {
+                        record[fieldparms[2]] = datas[ifield];
+                    });
+                    ret.records.push(record);
+                }
+            }
+        }
+    };
+
+
     /**
      * klipivot.getPivotRecords - array der records aus pivot-HTML-Table
      * @param {*} pivotTable 
      * @returns records
      */
     klipivot.getPivotRecords = function (pivotTable) {
+        // save config to cookie
+        let config = $("#myreport").data("pivotUIOptions");
+        var config_copy = JSON.parse(JSON.stringify(config));
+        //delete some values which will not serialize to JSON
+        delete config_copy["aggregators"];
+        delete config_copy["renderers"];
+        let source = $("#klipivottab0").attr("source");
+        klipivot.setCookie("pivotConfig_" + source, JSON.stringify(config_copy));
+
         let numRows = parseInt($(pivotTable).attr("data-numrows"));
         let template = [];
         let rows = [];
@@ -735,20 +1006,91 @@
      * l- label => concat, x - X-Achse, hier: Zeit; y - y-Achse, jeweils eine Zeile/Line
      */
     let fieldmapping = {
-        site: "l",
-        samplingheight: "l",
-        year: "x",
-        month: "x",
-        day: "x",
-        hour: "x",
-        minute: "-",
-        co2: "y",
-        stdev: "y",
-        nbpoints: "y",
-        flag: "l",
-        co2_withoutspikes: "y",
-        stdev_withoutspikes: "y",
-        totals: "y"
+        "ICOSCO2H": {
+            site: "l",
+            samplingheight: "l",
+            year: "x",
+            month: "x",
+            day: "x",
+            hour: "x",
+            minute: "-",
+            co2: "y",
+            stdev: "y",
+            nbpoints: "y",
+            flag: "l",
+            co2_withoutspikes: "y",
+            stdev_withoutspikes: "y",
+            totals: "y"
+        },
+        "ICOSMETH": {
+            site: "l",
+            samplingheight: "l",
+            year: "x",
+            month: "x",
+            day: "x",
+            hour: "x",
+            minute: "-",
+            ap: "y",
+            ap_stdev: "y",
+            ap_nbpoints: "y",
+            ap_flag: "l",
+            at: "y",
+            at_stdev: "y",
+            at_nbpoints: "y",
+            at_flag: "l",
+            rh: "y",
+            rh_stdev: "y",
+            rh_nbpoints: "y",
+            rh_flag: "l",
+            ws: "y",
+            ws_stdev: "y",
+            ws_nbpoints: "y",
+            ws_flag: "l",
+            wd: "y",
+            wd_stdev: "y",
+            wd_nbpoints: "y",
+            wd_flag: "l",
+            totals: "y"
+        },
+        "NOAACO2H": {
+            site_code: "l",
+            year: "x",
+            month: "x",
+            day: "x",
+            hour: "x",
+            minute: "-",
+            second: "-",
+            datetime: "-",
+            time_decimal: "-",
+            midpoint_time: "-",
+            value: "y",
+            value_std_dev: "y",
+            value_unc: "y",
+            nvalue: "y",
+            latitude: "-",
+            longitude: "-",
+            altitude: "-",
+            elevation: "l",
+            intake_height: "-",
+            instrument: "-",
+            qcflag: "y"
+        },
+        "NOAAMETH": {
+            station: "l",
+            year: "x",
+            month: "x",
+            day: "x",
+            hour: "x",
+            wd: "y",
+            ws: "y",
+            wsf: "y",
+            ap: "y",
+            tt60_0002: "y",
+            tt60_0010: "y",
+            tt60_top: "y",
+            rh: "y",
+            pi: "y"
+        }
     };
 
 
@@ -757,6 +1099,7 @@
      * @param {*} pivotTable 
      */
     klipivot.copyToChart = function (pivotTable) {
+        let source = $("#klipivottab0").attr("source");
         let actPivot = klipivot.getPivotRecords(pivotTable);
         let rows = actPivot.records; // rows ist ein array von row-arrays, also erst konvertieren zu records
         let heads = actPivot.heads;
@@ -792,7 +1135,7 @@
         // Aufbau der x-Metadaten
         let newxfields = [];
         newheads.forEach(function (newhead, inewhead) {
-            let ftyp = fieldmapping[newhead];
+            let ftyp = fieldmapping[source][newhead];
             if (typeof ftyp === "string" && ftyp === "x") {
                 newxfields.push(newhead);
             }
@@ -801,7 +1144,7 @@
         // Aufbau der y-Metadaten (eigentlich nur die y-Label-Prefixe)
         let newyfields = []; // genauer: y-labels
         newheads.forEach(function (newhead, inewhead) {
-            let ftyp = fieldmapping[newhead];
+            let ftyp = fieldmapping[source][newhead];
             if (typeof ftyp === "string" && ftyp === "l") {
                 newyfields.push(newhead);
             }
@@ -810,7 +1153,7 @@
         // Aufbau der Line-Metadaten
         let linefields = []; // genauer: y-label-Suffix und somit die eigentliche Variable
         newheads.forEach(function (newhead, inewhead) {
-            let ftyp = fieldmapping[newhead];
+            let ftyp = fieldmapping[source][newhead];
             if (typeof ftyp === "string" && ftyp === "y") {
                 linefields.push(newhead);
             }
@@ -1037,7 +1380,6 @@
         // brutale Testausgabe 
         let canvas = document.getElementById("klipivotchart");
         let ctx = canvas.getContext("2d");
-        debugger;
         let graph = new Chart(ctx, cconfig);
         $("#klipivotbut3").trigger("click");
     };
