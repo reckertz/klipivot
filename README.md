@@ -17,6 +17,16 @@
    npm install has to be run before starting the application from the installation folder
    with node server.js
 
+   a small change in the code of klipivot.js is necessary to assign the specific root-directory your need:
+   ```
+        let path = klipivot.getCookie("datapath");
+        if (path === null) {
+            path = JSON.stringify(["c:", "Projekte", "klimaapp", "public", "data"]);
+            klipivot.setCookie("datapath", path);
+        }
+   ```
+   if path === null then the assignment to path has to be changed to your needs.
+
    ## Usage
    After Installation as a prerequisite data has to be downloaded to get the raw data files,
    that shall be analyzed.
@@ -26,6 +36,7 @@
    When klipivot is envoked from the browser with http://localhost:3000/klipivot.html
    the following steps are available:
    - Initially the contents of the data-Directory is shown
+     - a cookie can be used to define the datapath you need: datapath	["c:","Projekte","klimaapp","public","data"]
    - the user can navigate to subdirectories or choose files
    - when a file is chosen, the following options are presented
      - Pivot-Tab shows the pivot-control where you can control, filter and aggregate data

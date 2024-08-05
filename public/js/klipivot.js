@@ -26,8 +26,14 @@
 
         $(".col1of2").css("height", $(window).height() + 'px');
         $(".col2of2").css("height", $(window).height() + 'px');
-        let path = ["c:", "Projekte", "klimaapp", "public", "data"];
-        klipivot.showDirectory(path, function (ret) {
+        debugger;
+        let path = klipivot.getCookie("datapath");
+        if (path === null) {
+            path = JSON.stringify(["c:", "Projekte", "klimaapp", "public", "data"]);
+            klipivot.setCookie("datapath", path);
+        }
+        path = JSON.parse(path);
+        klipivot.showDirectory(path, true, function (ret) {
             return;
         });
     };
@@ -81,7 +87,7 @@
         }
     };
 
-    klipivot.showDirectory = function (path, cb0000) {
+    klipivot.showDirectory = function (path, isfirst, cb0000) {
         async.waterfall([
                 function (cb1000) {
                     let ret = {};
@@ -105,7 +111,8 @@
                         crossDomain: false,
                         url: "api/files",
                         data: {
-                            path: path
+                            path: path,
+                            isfirst: isfirst
                         }
                     }).done(function (r1, textStatus, jqXHR) {
                         if (textStatus === "success" && typeof r1 === "object" && Array.isArray(r1)) {
@@ -131,31 +138,34 @@
                     let file = ret.files[0];
                     $("#file-list")
                         .append($("<li/>", {
-                                class: "klifile",
+                                class: "klifile clickable-item",
+                                // U+21E6 LEFTWARDS WHITE ARROW ⇦   &#x21E6;
                                 title: file.path,
                                 filepath: file.path + "..",
                                 filename: "",
                                 isDirectory: "true"
                             })
                             .append($("<button/>", {
+                                class: "clickable-item",
                                 css: {
                                     "min-width": "100%",
                                     "background-color": "pink"
                                 },
-                                html: file.path
+                                html: "<b>&#x2B05;" + file.path + "</b>"
                             }))
                         );
                     ret.files.forEach(function (file, ifile) {
                         if (file.isDirectory === "true" || file.isDirectory === true) {
                             $("#file-list")
                                 .append($("<li/>", {
-                                        class: "klifile",
+                                        class: "klifile clickable-item",
                                         title: file.path,
                                         filepath: file.path,
                                         filename: file.name,
                                         isDirectory: file.isDirectory
                                     })
                                     .append($("<button/>", {
+                                        class: "clickable-item",
                                         css: {
                                             "min-width": "100%",
                                             "background-color": "mistyrose"
@@ -164,10 +174,21 @@
                                     }))
                                 );
                         } else {
+                            let html = "";
+                            html += file.name;
+                            let liclass = "";
                             let parms = klipivot.getFiletype(file.name);
+                            if (parms.source.length > 0) {
+                                liclass = "clickable-item";
+                                html += "<br><b>" + parms.source + " (" + file.size.toLocaleString('de-DE', {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                    useGrouping: true,
+                                }) + ")</b>"
+                            }
                             $("#file-list")
                                 .append($("<li/>", {
-                                        class: "klifile",
+                                        class: "klifile " + liclass,
                                         css: {
                                             "min-width": "100%",
                                             "background-color": parms.color
@@ -180,27 +201,14 @@
                                         size: file.size
                                     })
                                     .append($("<button/>", {
+                                        class: liclass,
                                         css: {
                                             "min-width": "80%",
                                             "background-color": parms.color
                                         },
-                                        html: file.name
+                                        html: html
                                     }))
                                 );
-                            if (parms.source.length > 0) {
-                                $("#file-list").find("li:last")
-                                    .append($("<button/>", {
-                                        css: {
-                                            "min-width": "20%",
-                                            "background-color": parms.color
-                                        },
-                                        html: parms.source + " <b>(" + file.size.toLocaleString('de-DE', {
-                                            minimumFractionDigits: 0,
-                                            maximumFractionDigits: 0,
-                                            useGrouping: true,
-                                        }) + ")</b>"
-                                    }));
-                            }
                         }
                     });
                     cb1020(null, ret);
@@ -225,7 +233,7 @@
         if (file.isDirectory === "true" || file.isDirectory === true) {
             //createFileBrowser(path.join(file.filepath, file.filename));
             let path = file.filepath + file.filename;
-            klipivot.showDirectory(path, function (ret) {
+            klipivot.showDirectory(path, false, function (ret) {
                 return;
             });
         } else {
@@ -758,7 +766,7 @@
         let headcontrol = {};
         let newheads = [];
         let newnames = [];
-        debugger;
+
         heads.forEach(function (head, ihead) {
             let oldhead = head;
             let newhead = head.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
@@ -770,7 +778,7 @@
                 oldhead: oldhead,
             };
         });
-        debugger; // check headcontrol
+
         // Transformation headcontrol und rows zu records
         let records = [];
         rows.forEach(function (row, irow) {
@@ -780,7 +788,7 @@
             });
             records.push(record);
         });
-        debugger; // check records
+
         // Aufbau der x-Metadaten
         let newxfields = [];
         newheads.forEach(function (newhead, inewhead) {
@@ -789,7 +797,7 @@
                 newxfields.push(newhead);
             }
         });
-        debugger; // check newxfields
+
         // Aufbau der y-Metadaten (eigentlich nur die y-Label-Prefixe)
         let newyfields = []; // genauer: y-labels
         newheads.forEach(function (newhead, inewhead) {
@@ -798,7 +806,7 @@
                 newyfields.push(newhead);
             }
         });
-        debugger; // check newyfields
+
         // Aufbau der Line-Metadaten
         let linefields = []; // genauer: y-label-Suffix und somit die eigentliche Variable
         newheads.forEach(function (newhead, inewhead) {
@@ -807,7 +815,7 @@
                 linefields.push(newhead);
             }
         });
-        debugger; // check linefields
+
         // Aufbau des x-Vektors
         let xcontrol = {};
         let xlabels = [];
@@ -836,6 +844,7 @@
             }
             record.ylabel = ylabel;
         });
+        /*
         console.log("newxfields");
         console.log(newxfields);
         console.log("newyfields");
@@ -844,7 +853,7 @@
         console.log(xcontrol);
         console.log("ycontrol");
         console.log(ycontrol);
-        debugger;
+        */
 
         // Aufbau der xlabels für die x-Achse
         // xcontrol[xlabel] => xlabels
@@ -869,8 +878,42 @@
         console.log(datacontrol);
         // sieht alles gut aus, daher: Ausgabe
         klipivot.showChart(datacontrol, xlabels);
-        debugger;
+
     };
+
+    let colorlist = [
+        "#FF0000", // Red
+        "#00FF00", // Lime
+        "#0000FF", // Blue
+        "#FFFF00", // Yellow
+        "#00FFFF", // Cyan
+        "#FF00FF", // Magenta
+        "#800080", // Purple
+        "#008000", // Green
+        "#000080", // Navy
+        "#800000", // Maroon
+        "#008080", // Teal
+        "#808000", // Olive
+        "#C0C0C0", // Silver
+        "#808080", // Gray
+        "#FF8080", // Light Red
+        "#80FF80", // Light Green
+        "#8080FF", // Light Blue
+        "#FFFF80", // Light Yellow
+        "#80FFFF", // Light Cyan
+        "#FF80FF", // Light Magenta
+        "#FF0080", // Pink
+        "#00FF80", // Mint
+        "#8000FF", // Violet
+        "#80FF00", // Chartreuse
+        "#0080FF", // Azure
+        "#FF8000", // Orange
+        "#8080C0", // Lavender
+        "#C080C0", // Plum
+        "#C0C080", // Khaki
+        "#80C0C0" // Aquamarine
+    ];
+
 
     /**
      * klipivot.showChart - Aufbereiten config mit options aus datacontrol und xlabels
@@ -916,26 +959,30 @@
                             weight: "bold"
                         }
                     },
-                    scales: {
-                        x: {
-                            title: "Zeitachse"
+                },
+                scales: {
+                    x: {
+                        axis: "x",
+                        display: true,
+                        title: {
+                            text: "Zeitachse",
+                            display: true
                         }
                     }
                 },
-                
             }
         };
         cconfig.data.labels = xlabels;
         cconfig.data.datasets = [];
         //datacontrol[ylabel]
-        Object.keys(datacontrol).forEach(function(label, ilabel) {
+        Object.keys(datacontrol).forEach(function (label, ilabel) {
             let dataset = {};
             let record = datacontrol[label];
             dataset.variable = record.variable;
             dataset.label = record.label;
             dataset.data = [];
             const regex = /-9(?:\.|,)?9+(?:\.\d+)?/;
-            record.data.forEach(function(value, ival) {
+            record.data.forEach(function (value, ival) {
                 if (typeof value === "string" && regex.test(value)) {
                     value = null;
                 } else if (typeof value === "undefined" || value === null) {
@@ -949,16 +996,36 @@
                 }
                 dataset.data.push(value);
             });
-            dataset.backgroundColor = "red";
-            dataset.borderColor = "red";
+            let color = colorlist[ilabel];
+            dataset.backgroundColor = color; //"red";
+            dataset.borderColor = color; // "red";
             dataset.fill = false;
             dataset.pointRadius = 0;
             dataset.yAxisID = record.variable;
-            if (typeof cconfig.options.plugins.scales[dataset.yAxisID] === "undefined") {
-                cconfig.options.plugins.scales[dataset.yAxisID] = {
-                    dimension: record.variable,
-                    minvalue: null,
-                    maxvalue: null
+            /*            
+            scales: 
+            CO2H: 
+            axis: "y"
+            display: "auto"
+            id: "CO2H"
+            title: 
+                display: "auto"
+                text: "CO2H"
+            */
+            if (typeof cconfig.options.scales === "undefined") {
+                cconfig.options.scales = {};
+            }
+            if (typeof cconfig.options.scales[dataset.yAxisID] === "undefined") {
+                cconfig.options.scales[dataset.yAxisID] = {
+                    axis: "y",
+                    display: "auto",
+                    title: {
+                        text: record.variable,
+                        display: true
+                    },
+                    //dimension: record.variable,
+                    //minvalue: null,
+                    //maxvalue: null
                 };
             }
             dataset.tension = 0.4;
@@ -968,11 +1035,52 @@
         });
 
         // brutale Testausgabe 
-        
         let canvas = document.getElementById("klipivotchart");
         let ctx = canvas.getContext("2d");
+        debugger;
         let graph = new Chart(ctx, cconfig);
+        $("#klipivotbut3").trigger("click");
     };
+
+    /**
+     * klipivot.getCookie - Cookie-String mit name holen
+     * @param {*} name 
+     * @returns string oder null, wenn der Cookie noch nicht bekannt ist
+     */
+    klipivot.getCookie = function (name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    };
+
+    // Example usage
+    // var storedString = getCookie('myString');
+    // console.log(storedString); // Output: "This is a sample string"
+
+    /**
+     * klipivot.setCookie - Cookie-String setzen
+     * @param {*} name 
+     * @param {*} value 
+     * @param {*} days - ist optional, "ewig" wenn nicht gesetzt
+     */
+    klipivot.setCookie = function (name, value, days) {
+        var expires = "";
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    };
+
+    // Example usage
+    // setCookie('myString', 'This is a sample string', 30); // Stores the string for 30 days
+
 
 
     /**
