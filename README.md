@@ -41,12 +41,12 @@
    - when a file is chosen, a download to the browser is done and the file is parsed,
    the columnnames are transformed to be compliant with SQL-conventions. The following options are presented
      - the Pivot-Tab shows the pivot-control where you can control, filter and aggregate data
-     - if you have a flat datastructure in the pivot-control, you can
-       - click "Pivot to Clipboard" for a csv-based copy to clipboard
-       - click "Pivot to Chart" to get a chart-analysis of the pivot data
-    - the File-Tab shows the contents of the raw data file, you can select with highlighting,
-      mark hyperlinks and download the file
-    - the Chart-Tab shows the graphical analysis of the data  
+       - if you have a flat datastructure in the pivot-control, you can
+         - click "Pivot to Clipboard" for a csv-based copy to clipboard
+         - click "Pivot to Chart" to get a chart-analysis of the pivot data
+     - the File-Tab shows the contents of the raw data file, you can select with highlighting,
+     mark hyperlinks and download the file
+     - the Chart-Tab shows the graphical analysis of the data  
 
    ## Sources
    Data from the following sources can be controlled and analyzed
