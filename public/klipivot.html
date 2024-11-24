@@ -3,16 +3,46 @@
 
 <head>
     <title>Pivot Table</title>
+    
+    <!--link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.1.4/css/dataTables.dataTables.min.css"/-->
+    <!--link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css"-->
+    <!--link type="text/css" href="css/jquery.dataTables.min.css" /-->
+    
+    <!--link type="text/css" href="css/datatables.min.css" /-->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.3.4/css/buttons.dataTables.min.css">
+    <!--link type="text/css" href="css/buttons.dataTables.min.css"/-->
     <link type="text/css" href="css/Chart.min.css" />
+
     <script src="lib/jquery.min.js"></script>
     <script src="lib/jqueryui.js"></script>
+
+    <!--script src="lib/datatables.min.js"></script-->
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/1.3.2/js/dataTables.select.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.4/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.4/js/buttons.html5.min.js"></script>
+
+    <!--
+    <script src="lib/pivot.js"></script>
+    <link type="text/css" href="css/pivot.css" />
+    -->
     <script src="lib/async.js"></script>
     <script src="lib/hammer.js"></script>
     <script src="lib/chart.min.js"></script>
     <script src="lib/hilitor.js"></script>
     <script src="lib/FileSaver.js"></script>
+    
     <script src="https://unpkg.com/pivottable"></script>
     <link rel="stylesheet" href="https://unpkg.com/pivottable/dist/pivot.css">
+
+    <!--script src="https://cdn.datatables.net/2.1.4/js/dataTables.min.js"></script-->
+    <!--script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script-->
+    
+    <!--script src="lib/dataTables.select.min.js"></script-->
+    <!--script src="lib/buttons.colVis.min.js"></script-->
+
     <script src="js/klipivot.js"></script>
     <style type="text/css">
         .colseparator {
@@ -92,14 +122,16 @@
             background-color: #f0f0f0 !important;
         }
 
+        .selected {
+            background-color: mistyrose !important;
+        }
     </style>
 
 </head>
 
 <body>
-    <div id="file-browser" class="col1of2" style="width:'30%';overflow: auto;"></div>
-    <div class="col2of2" style="width:'68%';overflow: auto;"></div>
-
+    <!--nav class="navbar navbar-brand header  sticky-top navbar-light bg-light" style=" background-color: #e3f2fd;">
+    </nav-->
     <script>
         $(document).ready(function () {
             let queryString = window.location.search;

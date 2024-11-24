@@ -13,6 +13,7 @@
     let gblpivot = {};
     let pivotrecords = [];
     let myHilitor;
+    let originalRecords = [];
     /**
      * klipivot - 
      */
@@ -21,11 +22,35 @@
             'overflow': 'hidden',
             'height': $(window).height() + 'px'
         });
-        $(".col1of2").css("width", '20%');
-        $(".col2of2").css("width", '75%');
-
-        $(".col1of2").css("height", $(window).height() + 'px');
-        $(".col2of2").css("height", $(window).height() + 'px');
+        klipivot.initUI();
+        $("nav").css("width", '100%');
+        let navh = $("nav").find("div:first").height() * 2;
+        $("body")
+            .append($("<div/>", {
+                    css: {
+                        width: "100%",
+                        float: "left"
+                    }
+                })
+                .append($("<div/>", {
+                    class: "col1of2",
+                    id: "file-browser",
+                    css: {
+                        "width": "20%",
+                        overflow: "auto"
+                    }
+                }))
+                .append($("<div/>", {
+                    class: "col2of2",
+                    id: "file-contents",
+                    css: {
+                        "width": "75%",
+                        overflow: "auto"
+                    }
+                }))
+            );
+        $(".col1of2").css("height", ($(window).height() - navh * 1.1) + 'px');
+        $(".col2of2").css("height", ($(window).height() - navh * 1.1) + 'px');
         Chart.defaults.font.weight = "bold";
         let path = klipivot.getCookie("datapath");
         if (path === null) {
@@ -257,8 +282,6 @@
                 return;
             });
         } else {
-            //const data = fetchFileData(path.join(file.filepath, file.filename));
-            //createPivotTable(data);
             // Analyse
             let fullfilepath = $(this).attr("filepath") + $(this).attr("filename");
             let jqxhr = $.ajax({
@@ -271,6 +294,7 @@
                 }
             }).done(function (r1, textStatus, jqXHR) {
                 if (textStatus === "success" && typeof r1 === "object" && Object.keys(r1).length > 0) {
+                    console.log(fullfilepath + "=>" + r1.fileContent.length);
                     klipivot.showData(r1);
                     return
                 } else {
@@ -289,6 +313,14 @@
         }
     });
 
+    /**
+     * klipivot.showTabs
+     * tab: klipivottab0
+     * buttons: .tablinks klipivotbut1, 2, 3, 4, 5 mit onClick: openTab(event, 'klipivotbut<n>')
+     *                                                 oder andere Funktion speziell zum target-Tab
+     * divs: .tabcontent klipivottab1, 2, 3, 4, 5
+     * 
+     */
     klipivot.showTabs = function () {
         $(".col2of2").children().remove();
         // https://www.w3schools.com/howto/howto_js_tabs.asp
@@ -315,6 +347,18 @@
                     onclick: "klipivot.openChartTab(event, 'klipivottab3')",
                     html: "Chart"
                 }))
+                .append($("<button/>", {
+                    class: "tablinks",
+                    id: "klipivotbut4",
+                    onclick: "klipivot.openChartTab(event, 'klipivottab4')",
+                    html: "Table"
+                }))
+                .append($("<button/>", {
+                    class: "tablinks",
+                    id: "klipivotbut5",
+                    onclick: "klipivot.openChartTab(event, 'klipivottab5')",
+                    html: "Matrix"
+                }))
             );
 
         $(".col2of2")
@@ -334,6 +378,16 @@
                 id: "klipivottab3",
                 class: "tabcontent"
             }));
+        $(".col2of2")
+            .append($("<div/>", {
+                id: "klipivottab4",
+                class: "tabcontent"
+            }));
+        $(".col2of2")
+            .append($("<div/>", {
+                id: "klipivottab5",
+                class: "tabcontent"
+            }));
     };
 
     klipivot.openTab = function (evt, id) {
@@ -346,12 +400,10 @@
         // Get all elements with class="tablinks" and remove the class "active"
         tablinks = document.getElementsByClassName("tablinks");
         for (i = 0; i < tablinks.length; i++) {
-            //tablinks[i].className = tablinks[i].className.replace(" active", "");
             $(tablinks[i]).removeClass("active");
         }
         // Show the current tab, and add an "active" class to the button that opened the tab
         document.getElementById(id).style.display = "block";
-        //evt.currentTarget.className += " active";
         $(evt.currentTarget).addClass("active");
     };
 
@@ -362,328 +414,352 @@
      */
     klipivot.openChartTab = function (evt, id) {
         klipivot.openTab(evt, id);
-
-        // jetzt wird erst der Inhalt gefüllt:
-        /*
-        let x = gblpivot;
-        // Wait for the PivotTable to be fully initialized
-        $("#" + id).children().remove();
-        for (let i = 0; i < 10; i++) {
-            let html = JSON.stringify(pivotrecords[i]);
-            $("#" + id)
-                .append("<span/>", {
-                    html: html + "<br>"
-                });
-        }
-        */
     };
 
     klipivot.showData = function (r1, cb0000) {
         async.waterfall([
-                function (cb1200) {
-                    let ret = {};
-                    klipivot.showTabs();
-                    $("#klipivottab1").children().remove();
-                    $("#klipivottab1")
-                        .append($("<div/>", {
-                                css: {
-                                    width: "100%",
-                                    "background-color": "lightsteelblue",
-                                    "margin": "10px",
-                                    float: "left"
-                                }
-                            })
-                            .append($("<button/>", {
-                                class: "btn btn-info",
-                                css: {
-                                    "font-weight": "bolder",
-                                    float: "left",
-                                    "margin-left": "20px"
-                                },
-                                html: "Pivot to Clipboard",
-                                title: "Pivottabelle als CSV ins Clipboard kopieren",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    // Assume you have an existing PivotTable instance, often created like this:
-                                    // $('#myreport').pivotUI(data, options);
-                                    // You can access the pivotData object
-                                    //var pivotData = $('#myreport').data('pivotUIOptions').pivotData;
-                                    let pivotTable = $('#myreport').find(".pvtTable"); // Access the raw DOM element
-                                    //let actualPivotRecords = klipivot.getPivotRecords(pivotTable);
-                                    klipivot.copyToClipboard(pivotTable);
-                                }
-                            }))
-                            .append($("<button/>", {
-                                class: "btn btn-info",
-                                css: {
-                                    "font-weight": "bolder",
-                                    float: "left",
-                                    "margin-left": "20px"
-                                },
-                                html: "Pivot to Chart",
-                                title: "Pivottabelle als Chart aufbreiten und ausgeben",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    let pivotTable = $('#myreport').find(".pvtTable"); // Access the raw DOM element
-                                    klipivot.copyToChart(pivotTable);
-                                }
-                            }))
-                        );
-                    $("#klipivottab1")
-                        .append($("<div/>", {
-                                css: {
-                                    width: "100%",
-                                    float: "left"
-                                },
-                                id: "pivot-table"
-                            })
-                            .append($("<div/>", {
-                                width: "100%",
-                                id: "myreport"
-                            }))
-                        );
-                    cb1200(null, ret);
-                    return;
-                },
-                function (ret, cb1220) {
-                    debugger;
-                    let fileContent = r1.fileContent;
-                    let source = r1.source;
-                    let fullfilename = r1.fullfilename;
-                    let filename = r1.filename;
-                    $("#klipivottab0").attr("source", source);
-                    $("#klipivottab0").attr("fullfilename", fullfilename);
-                    $("#klipivottab0").attr("filename", filename);
-                    $("#klipivottab0")
-                        .append($("<button/>", {
-                            html: "<b>" + source + " - " + filename + "</b>"
-                        }));
-                    let filetype = {};
-                    let lines = fileContent.split(/\r\n|\r|\n/);
-                    ret.records = [];
-                    if (source === "ICOSCO2H") {
-                        let fields = [];
-                        for (let iline = 0; iline < lines.length - 1; iline++) {
-                            if (lines[iline].startsWith("#") && !lines[iline + 1].startsWith("#")) {
-                                fields = lines[iline].substring(1).split(";");
-                                for (let irec = iline + 1; irec < lines.length; irec++) {
-                                    let datas = lines[irec].split(";");
-                                    let record = {};
-                                    fields.forEach(function (field, ifield) {
-                                        record[field] = datas[ifield];
-                                    });
-                                    ret.records.push(record);
-                                }
-                                pivotrecords = [];
-
-                                let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
-                                if (pivotConfig === null) {
-                                    gblpivot = $("#myreport").pivotUI(
-                                        ret.records, {
-                                            rows: [],
-                                            cols: [],
-                                            vals: []
-                                        });
-                                } else {
-                                    pivotConfig = JSON.parse(pivotConfig);
-                                    gblpivot = $("#myreport").pivotUI(
-                                        ret.records, {
-                                            rows: pivotConfig.rows,
-                                            cols: pivotConfig.cols,
-                                            vals: pivotConfig.vals,
-                                            exclusions: pivotConfig.exclusions,
-                                            inclusions: pivotConfig.inclusions,
-                                            inclusionsInfo: pivotConfig.inclusionsInfo,
-                                        });
-                                }
-                                break;
-                            }
-                        }
-                    } else if (source === "ICOSMETH") {
-                        klipivot.prepICOSMETH(lines, ret);
-                        pivotrecords = [];
-                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
-                        if (pivotConfig === null) {
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: [],
-                                    cols: [],
-                                    vals: []
-                                });
-                        } else {
-                            pivotConfig = JSON.parse(pivotConfig);
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: pivotConfig.rows,
-                                    cols: pivotConfig.cols,
-                                    vals: pivotConfig.vals,
-                                    exclusions: pivotConfig.exclusions,
-                                    inclusions: pivotConfig.inclusions,
-                                    inclusionsInfo: pivotConfig.inclusionsInfo,
-                                });
-                        }
-                    } else if (source === "NOAACO2H") {
-                        klipivot.prepNOAACO2H(lines, ret);
-                        pivotrecords = [];
-                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
-                        if (pivotConfig === null) {
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: [],
-                                    cols: [],
-                                    vals: []
-                                });
-                        } else {
-                            pivotConfig = JSON.parse(pivotConfig);
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: pivotConfig.rows,
-                                    cols: pivotConfig.cols,
-                                    vals: pivotConfig.vals,
-                                    exclusions: pivotConfig.exclusions,
-                                    inclusions: pivotConfig.inclusions,
-                                    inclusionsInfo: pivotConfig.inclusionsInfo,
-                                });
-                        }
-
-                    } else if (source === "NOAAMETH") {
-                        klipivot.prepNOAAMETH(lines, ret);
-                        pivotrecords = [];
-                        let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
-                        if (pivotConfig === null) {
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: [],
-                                    cols: [],
-                                    vals: []
-                                });
-                        } else {
-                            pivotConfig = JSON.parse(pivotConfig);
-                            gblpivot = $("#myreport").pivotUI(
-                                ret.records, {
-                                    rows: pivotConfig.rows,
-                                    cols: pivotConfig.cols,
-                                    vals: pivotConfig.vals,
-                                    exclusions: pivotConfig.exclusions,
-                                    inclusions: pivotConfig.inclusions,
-                                    inclusionsInfo: pivotConfig.inclusionsInfo,
-                                });
-                        }
-
-                    } else {
-                        source = "?";
-
-                    }
-                    cb1220(null, ret);
-                    return
-                },
-                function (ret, cb1230) {
-                    let source = r1.source;
-                    let fullfilename = r1.fullfilename;
-                    let filename = r1.filename;
-                    let filetype = {};
-                    let html = r1.fileContent.replace(/\r\n|\r|\n/g, '<br/>');
-                    myHilitor = new Hilitor("klipivotraw"); // id of the element to parse
-                    $("#klipivottab2")
-                        .append($("<div/>", {
+            function (cb1200) {
+                let ret = {};
+                klipivot.showTabs();
+                $("#klipivottab1").children().remove();
+                $("#klipivottab1")
+                    .append($("<div/>", {
                             css: {
+                                width: "100%",
+                                "background-color": "lightsteelblue",
                                 "margin": "10px",
-                                "background-color": "lightsteelblue"
-                            },
-                            id: "klipivotrawbuttons"
-                        }))
-                        .append($("<span/>", {
-                            id: "klipivotraw",
-                            class: "noprint",
-                            html: html,
-                            filename: r1.filename,
-                            css: {
-                                "margin-top": "20px",
-                                width: "100%",
-                                "float": "left",
-                                "font-family": "monospace"
+                                float: "left"
                             }
-                        }));
-
-                    $("#klipivotrawbuttons")
-                        .append($("<form/>")
-                            .append($("<label/>", {
-                                for: "text-search",
-                                html: "Text-Suche"
-                            }))
-                            .append($("<input/>", {
-                                type: "search",
-                                id: "text-search",
-                                name: "klipivotrawsearch",
-                                //autocomplete: "on",
-                                placeholder: "Suchbegriff…"
-                            }))
-                            .append($("<button/>", {
-                                class: "btn btn-secondary",
-                                text: "Suche",
-                                title: "Hervorhebung der Treffer",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    myHilitor.apply($("#text-search").val());
-                                }
-                            }))
-                            .append($("<button/>", {
-                                class: "btn btn-secondary",
-                                text: "Reset",
-                                title: "Rücksetzen der Hervorhebung der Treffer",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    myHilitor.remove();
-                                }
-                            }))
-                            .append($("<button/>", {
-                                class: "btn btn-secondary",
-                                text: "Hyperlinks hervorheben",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    let text = $("#klipivotraw").html();
-                                    if (text.indexOf("<a href=") >= 0) {
-                                        return;
-                                    }
-                                    let urlRegex = /(((https?:\/\/)|(www\.))[^\s|<]+)/g;
-                                    //var urlRegex = /(https?:\/\/[^\s]+)/g;
-                                    let newtext = text.replace(urlRegex, function (url, b, c) {
-                                        var url2 = (c == 'www.') ? 'http://' + url : url;
-                                        return '<a href="' + url2 + '" target="_blank">' + url + '</a>';
-                                    });
-                                    $("#klipivotraw").html(newtext);
-                                    console.log("X");
-                                }
-                            }))
-                            .append($("<button/>", {
-                                class: "btn btn-secondary",
-                                text: "Textanzeige wiederherstellen",
-                                title: "die Textdatei wird angezeigt ohne evtl. Hyperlinks und Suchhervorhebungen",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    $("#klipivotraw").html(originalhtml);
-                                }
-                            }))
-
-                            .append($("<button/>", {
-                                class: "btn btn-warning",
-                                text: "Download Datei",
-                                title: "Download der Originaldaten an den Browser",
-                                click: function (evt) {
-                                    evt.preventDefault();
-                                    let filename = $("#klipivotraw").attr("filename");
-                                    saveTextAs($("#klipivotraw").html(), filename + ".html", "UTF-8");
-                                }
-                            }))
-                        );
-                    cb1230(null, ret);
-                    return
-                }
-            ],
-            function (err, ret) {
-                $("#klipivotbut1").trigger("click");
+                        })
+                        .append($("<button/>", {
+                            class: "btn btn-info",
+                            css: {
+                                "font-weight": "bolder",
+                                float: "left",
+                                "margin-left": "20px"
+                            },
+                            html: "Pivot to Clipboard",
+                            title: "Pivottabelle als CSV ins Clipboard kopieren",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                // Assume you have an existing PivotTable instance, often created like this:
+                                let pivotTable = $('#myreport').find(".pvtTable"); // Access the raw DOM element
+                                klipivot.copyToClipboard(pivotTable);
+                            }
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-info",
+                            css: {
+                                "font-weight": "bolder",
+                                float: "left",
+                                "margin-left": "20px"
+                            },
+                            html: "Pivot to Chart",
+                            title: "Pivottabelle als Chart aufbreiten und ausgeben",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                let pivotTable = $('#myreport').find(".pvtTable"); // Access the raw DOM element
+                                klipivot.copyToChart(pivotTable);
+                            }
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-info",
+                            css: {
+                                "font-weight": "bolder",
+                                float: "left",
+                                "margin-left": "20px"
+                            },
+                            html: "Pivot to Table",
+                            title: "Daten der Pivottabelle als Tabelle ausgeben",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                let pivotData = $("#myreport").data("pivotUIOptions");
+                                let deltable = $("#klipivottbl").DataTable();
+                                deltable.destroy();
+                                $("#klipivottab4").children().remove();
+                                $("#klipivottab4")
+                                    .append($("<div/>", {
+                                        css: {
+                                            "margin": "10px",
+                                            "background-color": "lightsteelblue"
+                                        },
+                                        id: "klipivottablebuttons"
+                                    }))
+                                    .append($("<div/>", {
+                                        id: "klipivotDataTable"
+                                    }));
+                                klipivot.copyToTable(originalRecords, pivotData, "#klipivotDataTable", "#klipivottablebuttons");
+                            }
+                        }))
+                    );
+                $("#klipivottab1")
+                    .append($("<div/>", {
+                            css: {
+                                width: "100%",
+                                float: "left"
+                            },
+                            id: "pivot-table"
+                        })
+                        .append($("<div/>", {
+                            width: "100%",
+                            id: "myreport"
+                        }))
+                    );
+                cb1200(null, ret);
                 return;
-            });
+            },
+            function (ret, cb1220) {
+                let fileContent = r1.fileContent;
+                let source = r1.source;
+                let fullfilename = r1.fullfilename;
+                let filename = r1.filename;
+                $("#klipivottab0").attr("source", source);
+                $("#klipivottab0").attr("fullfilename", fullfilename);
+                $("#klipivottab0").attr("filename", filename);
+                $("#klipivottab0")
+                    .append($("<button/>", {
+                        css: {
+                            "font-weight": "bold",
+                            "font-size": "large",
+                        },
+                        html: source + " - " + filename
+                    }));
+                let filetype = {};
+                let lines = fileContent.split(/\r\n|\r|\n/);
+                ret.records = [];
+                if (source === "ICOSCO2H") {
+                    let fields = [];
+                    for (let iline = 0; iline < lines.length - 1; iline++) {
+                        if (lines[iline].startsWith("#") && !lines[iline + 1].startsWith("#")) {
+                            fields = lines[iline].substring(1).split(";");
+                            for (let irec = iline + 1; irec < lines.length; irec++) {
+                                let datas = lines[irec].split(";");
+                                let record = {};
+                                fields.forEach(function (field, ifield) {
+                                    record[field] = datas[ifield];
+                                });
+                                ret.records.push(record);
+                            }
+                            pivotrecords = [];
+
+                            let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                            if (pivotConfig === null) {
+                                originalRecords = ret.records;
+                                gblpivot = $("#myreport").pivotUI(
+                                    ret.records, {
+                                        rows: [],
+                                        cols: [],
+                                        vals: []
+                                    });
+                            } else {
+                                pivotConfig = JSON.parse(pivotConfig);
+                                originalRecords = ret.records;
+                                gblpivot = $("#myreport").pivotUI(
+                                    ret.records, {
+                                        rows: pivotConfig.rows,
+                                        cols: pivotConfig.cols,
+                                        vals: pivotConfig.vals,
+                                        exclusions: pivotConfig.exclusions,
+                                        inclusions: pivotConfig.inclusions,
+                                        inclusionsInfo: pivotConfig.inclusionsInfo,
+                                    });
+                            }
+                            break;
+                        }
+                    }
+                } else if (source === "ICOSMETH") {
+                    klipivot.prepICOSMETH(lines, ret);
+                    pivotrecords = [];
+                    let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                    if (pivotConfig === null) {
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: [],
+                                cols: [],
+                                vals: []
+                            });
+                    } else {
+                        pivotConfig = JSON.parse(pivotConfig);
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: pivotConfig.rows,
+                                cols: pivotConfig.cols,
+                                vals: pivotConfig.vals,
+                                exclusions: pivotConfig.exclusions,
+                                inclusions: pivotConfig.inclusions,
+                                inclusionsInfo: pivotConfig.inclusionsInfo,
+                            });
+                    }
+                } else if (source === "NOAACO2H") {
+                    debugger;
+                    klipivot.prepNOAACO2H(lines, ret);
+                    console.log("Datalines:" + lines.length);
+                    pivotrecords = [];
+                    let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                    if (pivotConfig === null) {
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: [],
+                                cols: [],
+                                vals: []
+                            });
+                    } else {
+                        pivotConfig = JSON.parse(pivotConfig);
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: pivotConfig.rows,
+                                cols: pivotConfig.cols,
+                                vals: pivotConfig.vals,
+                                exclusions: pivotConfig.exclusions,
+                                inclusions: pivotConfig.inclusions,
+                                inclusionsInfo: pivotConfig.inclusionsInfo,
+                            });
+                    }
+
+                } else if (source === "NOAAMETH") {
+                    debugger;
+                    klipivot.prepNOAAMETH(lines, ret);
+                    pivotrecords = [];
+                    let pivotConfig = klipivot.getCookie("pivotConfig_" + source);
+                    if (pivotConfig === null) {
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: [],
+                                cols: [],
+                                vals: []
+                            });
+                    } else {
+                        pivotConfig = JSON.parse(pivotConfig);
+                        originalRecords = ret.records;
+                        gblpivot = $("#myreport").pivotUI(
+                            ret.records, {
+                                rows: pivotConfig.rows,
+                                cols: pivotConfig.cols,
+                                vals: pivotConfig.vals,
+                                exclusions: pivotConfig.exclusions,
+                                inclusions: pivotConfig.inclusions,
+                                inclusionsInfo: pivotConfig.inclusionsInfo,
+                            });
+                    }
+
+                } else {
+                    source = "?";
+
+                }
+                cb1220(null, ret);
+                return
+            },
+            function (ret, cb1230) {
+                let source = r1.source;
+                let fullfilename = r1.fullfilename;
+                let filename = r1.filename;
+                let filetype = {};
+                let html = r1.fileContent.replace(/\r\n|\r|\n/g, '<br/>');
+                myHilitor = new Hilitor("klipivotraw"); // id of the element to parse
+                $("#klipivottab2")
+                    .append($("<div/>", {
+                        css: {
+                            "margin": "10px",
+                            "background-color": "lightsteelblue"
+                        },
+                        id: "klipivotrawbuttons"
+                    }))
+                    .append($("<span/>", {
+                        id: "klipivotraw",
+                        class: "noprint",
+                        html: html,
+                        filename: r1.filename,
+                        css: {
+                            "margin-top": "20px",
+                            width: "100%",
+                            "float": "left",
+                            "font-family": "monospace"
+                        }
+                    }));
+
+                $("#klipivotrawbuttons")
+                    .append($("<form/>")
+                        .append($("<label/>", {
+                            for: "text-search",
+                            html: "Text-Suche"
+                        }))
+                        .append($("<input/>", {
+                            type: "search",
+                            id: "text-search",
+                            name: "klipivotrawsearch",
+                            //autocomplete: "on",
+                            placeholder: "Suchbegriff…"
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-secondary",
+                            text: "Suche",
+                            title: "Hervorhebung der Treffer",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                myHilitor.apply($("#text-search").val());
+                            }
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-secondary",
+                            text: "Reset",
+                            title: "Rücksetzen der Hervorhebung der Treffer",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                myHilitor.remove();
+                            }
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-secondary",
+                            text: "Hyperlinks hervorheben",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                let text = $("#klipivotraw").html();
+                                if (text.indexOf("<a href=") >= 0) {
+                                    return;
+                                }
+                                let urlRegex = /(((https?:\/\/)|(www\.))[^\s|<]+)/g;
+                                //var urlRegex = /(https?:\/\/[^\s]+)/g;
+                                let newtext = text.replace(urlRegex, function (url, b, c) {
+                                    var url2 = (c == 'www.') ? 'http://' + url : url;
+                                    return '<a href="' + url2 + '" target="_blank">' + url + '</a>';
+                                });
+                                $("#klipivotraw").html(newtext);
+                                console.log("X");
+                            }
+                        }))
+                        .append($("<button/>", {
+                            class: "btn btn-secondary",
+                            text: "Textanzeige wiederherstellen",
+                            title: "die Textdatei wird angezeigt ohne evtl. Hyperlinks und Suchhervorhebungen",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                $("#klipivotraw").html(originalhtml);
+                            }
+                        }))
+
+                        .append($("<button/>", {
+                            class: "btn btn-warning",
+                            text: "Download Datei",
+                            title: "Download der Originaldaten an den Browser",
+                            click: function (evt) {
+                                evt.preventDefault();
+                                let filename = $("#klipivotraw").attr("filename");
+                                saveTextAs($("#klipivotraw").html(), filename + ".html", "UTF-8");
+                            }
+                        }))
+                    );
+                cb1230(null, ret);
+                return
+            }
+        ], function (err, ret) {
+            $("#klipivotbut1").trigger("click");
+            return;
+        });
     };
 
 
@@ -712,8 +788,6 @@
         }
     };
 
-
-
     /**
      * klipivot.prepNOAACO2H - lines aufbereiten zu ret.records
      * funktioniert wie ICOSCO2H (!) aber Blank-Separierung
@@ -724,49 +798,30 @@
     klipivot.prepNOAACO2H = function (lines, ret) {
         let fields = [];
         ret.records = [];
-        if (lines.length < 2001) {
-            for (let iline = 0; iline < lines.length - 1; iline++) {
-                if (!lines[iline].startsWith("#")) {
+        // Filtern nach Jahren 2020, 2021, 2022
+        // Vorlauf: Kopfzeile finden und raus aus dem Loop
+        let ihead = false;
+        let indyear = 0;
+        let firstDataLine = 0;
+        for (let iline = 0; iline < lines.length; iline++) {
+            if (!lines[iline].startsWith("#")) {
+                // Kopfzeile
+                if (ihead === false) {
                     fields = lines[iline].substring(1).split(" ");
-                    for (let irec = iline + 1; irec < lines.length; irec++) {
-                        let datas = lines[irec].split(" ");
-                        let record = {};
-                        fields.forEach(function (field, ifield) {
-                            record[field] = datas[ifield];
-                        });
-                        ret.records.push(record);
-                    }
-                    break;
+                    indyear = fields.indexOf("year");
+                    ihead = true;
+                    continue;
                 }
-            }
-        } else {
-            for (let iline = 0; iline < 1000; iline++) {
-                if (!lines[iline].startsWith("#")) {
-                    fields = lines[iline].substring(1).split(" ");
-                    // erste 1000 Sätze bereitstellen
-                    let von1 = iline + 1;
-                    let bis1 = iline + 1 + 1000;
-                    for (let irec = von1; irec < bis1; irec++) {
-                        let datas = lines[irec].split(" ");
-                        let record = {};
-                        fields.forEach(function (field, ifield) {
-                            record[field] = datas[ifield];
-                        });
-                        ret.records.push(record);
-                    }
-                    // letzte 1000 Sätze bereitstellen
-                    let von2 = lines.length - 1000 - 1;
-                    let bis2 = lines.length;
-                    for (let irec = von2; irec < bis2; irec++) {
-                        let datas = lines[irec].split(" ");
-                        let record = {};
-                        fields.forEach(function (field, ifield) {
-                            record[field] = datas[ifield];
-                        });
-                        ret.records.push(record);
-                    }
-                    break;
+                // alle Datenzeilen nach Jahren 2020, 2021, 2022
+                let datas = lines[iline].split(" ");
+                if (["2020", "2021", "2022"].indexOf(datas[indyear]) < 0) {
+                    continue;
                 }
+                let record = {};
+                fields.forEach(function (field, ifield) {
+                    record[field] = datas[ifield].trim();
+                });
+                ret.records.push(record);
             }
         }
     };
@@ -993,9 +1048,182 @@
         // Function to copy CSV string to clipboard (modern browsers)
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function () {
-                console.log('Copied to clipboard successfully!');
+                klipivot.putMessage('Copied to clipboard successfully!', 1);
             }, function (err) {
-                console.error('Could not copy text: ', err);
+                klipivot.putMessage('Could not copy text: ' + err, 3);
+            });
+        }
+        // Call the function to copy the CSV string
+        copyToClipboard(resultstring);
+    };
+
+
+    /**
+     * klipivot.copyArraysToMatrix
+     * @param {*} heads (fieldnames), rows 
+     */
+    klipivot.copyArraysToMatrix = function (heads, rows) {
+        // Prepare Data-Lines
+        let len = rows.length;
+        if (len > 5) {
+            len = 5;
+        }
+
+        $("#klipivotbut5").trigger("click");
+
+        let deltable = $('#klipivotmat').DataTable();
+        deltable.destroy();
+        $("#klipivottab5").children().remove();
+
+        $("#klipivottab5")
+            .append($("<div/>", {
+                css: {
+                    "margin": "10px",
+                    "background-color": "lightsteelblue"
+                },
+                id: "klipivotmatbuttons"
+            }))
+            .append($("<div/>", {
+                id: "klipivotmatdata"
+            }));
+
+
+        $("#klipivotmatdata")
+            .append($("<table/>", {
+                    id: "klipivotmat",
+                    class: "display cell-border order-column",
+                    css: {
+                        width: "100%"
+                    }
+                })
+                .append($("<thead/>"))
+                .append($("<tbody/>"))
+            );
+        let columnnames = [];
+        $("#klipivotmat>thead")
+            .append($("<tr/>"));
+        $("#klipivotmat>thead>tr")
+            .append($("<th/>", {
+                html: "fieldname"
+            }));
+        columnnames.push("fieldname");
+
+        for (let irec = 0; irec < len; irec++) {
+            $("#klipivotmat>thead>tr")
+                .append($("<th/>", {
+                    html: "Record_" + (irec + 1)
+                }));
+            columnnames.push("Record_" + (irec + 1));
+        }
+
+        for (let ihead = 0; ihead < heads.length; ihead++) {
+            $("#klipivotmat>tbody")
+                .append($("<tr/>"));
+            $("#klipivotmat>tbody>tr:last")
+                .append($("<td/>", {
+                    html: heads[ihead]
+                }));
+            for (let irec = 0; irec < len; irec++) {
+                $("#klipivotmat>tbody>tr:last")
+                    .append($("<td/>", {
+                        html: rows[irec][ihead]
+                    }));
+            }
+        }
+
+        let tconfig = {};
+        let columnDefs = [];
+        let targets = [];
+        let columns = [];
+        columnnames.forEach(function (fieldname, ifield) {
+            targets.push(ifield);
+        });
+        tconfig.columnDefs = [];
+        tconfig.columnDefs.push({
+            targets: targets,
+            orderable: true
+        });
+        let table;
+        tconfig.initComplete = function () {
+            var api = this.api();
+            // Add the input fields to the header
+            $('input.column-filter').on('keyup change', function () {
+                var i = $(this).attr('data-column');
+                var v = $(this).val();
+                api.columns(i).search(v).draw();
+            });
+        };
+
+        tconfig.dom = 'B<"dt-buttons btn-group"f>rtip'; // 'Bfrtip';   // 'QBRfrtip';
+        tconfig.ordering = false;
+        tconfig.buttons = [
+            'copy',
+            'csv',
+            {
+                text: 'Copy Selected',
+                title: 'Clipboard copy of rows with a checkbox selected',
+                action: function (e, dt, node, config) {
+                    e.preventDefault();
+                    let tableid = $(this.node()).attr("aria-controls"); //="r853303t"
+                    let seldata = klipivot.getSelectedData(tableid);
+                    klipivot.copyArraysToClipboard(seldata.fieldnames, seldata.rows);
+                }
+            },
+            {
+                extend: 'colvis',
+                columns: ':not(:first-child)',
+                /*
+                text: '<i class="fa fa-columns"></i> Columns',
+                attr: {
+                    class: 'btn btn-secondary'
+                },
+                init: function (api, node, config) {
+                    var $node = $(node);
+                    $node.removeClass('btn-secondary').addClass('btn-group');
+                    // Create individual column visibility buttons
+                    api.columns().indexes().each(function (index) {
+                        if (index > 0) {
+                            $node.append(`<button class="btn btn-secondary column-vis-btn" data-column="${index}">${api.column(index).header().textContent}</button>`);
+                        }
+                    });
+                }
+                */
+            }
+        ];
+        table = $('#klipivotmat').DataTable(tconfig);
+
+        $(document).on('click', '#klipivotmat tbody tr', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            e.currentTarget.classList.toggle('selected');
+        });
+
+    };
+
+
+    /**
+     * klipivot.copyArraysToClipboard
+     * @param {*} heads (fieldnames), rows 
+     */
+    klipivot.copyArraysToClipboard = function (heads, rows) {
+        // Prepare Header-Line
+        let resultstring = "";
+        let headerline = "";
+        headerline = heads.join(";") + "\r\n";
+        resultstring += headerline;
+        // Prepare Data-Lines
+        rows.forEach(function (row, irow) {
+            let dataline = "";
+            dataline = row.join(";") + "\r\n";
+            resultstring += dataline;
+        });
+        // Function to copy CSV string to clipboard (modern browsers)
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function () {
+                klipivot.putMessage('Copied to clipboard successfully!', 1);
+            }, function (err) {
+                klipivot.putMessage('Could not copy text: ' + err, 3);
             });
         }
         // Call the function to copy the CSV string
@@ -1345,16 +1573,6 @@
             dataset.fill = false;
             dataset.pointRadius = 0;
             dataset.yAxisID = record.variable;
-            /*            
-            scales: 
-            CO2H: 
-            axis: "y"
-            display: "auto"
-            id: "CO2H"
-            title: 
-                display: "auto"
-                text: "CO2H"
-            */
             if (typeof cconfig.options.scales === "undefined") {
                 cconfig.options.scales = {};
             }
@@ -1366,9 +1584,6 @@
                         text: record.variable,
                         display: true
                     },
-                    //dimension: record.variable,
-                    //minvalue: null,
-                    //maxvalue: null
                 };
             }
             dataset.tension = 0.4;
@@ -1383,6 +1598,275 @@
         let graph = new Chart(ctx, cconfig);
         $("#klipivotbut3").trigger("click");
     };
+
+    /**
+     * klipivot.copyToTable(records, pivotData, "#klipivotDataTable", "#klipivottablebuttons"); 
+     * @param {*} records 
+     * @param {*} pivotData 
+     * // inclusions: <field>: [array of values for inclusion]
+     * // exclusions: <field>: [array of values for exclusion]
+     * @param {*} tableContainer 
+     * @param {*} buttonContainer 
+     */
+    klipivot.copyToTable = function (records, pivotData, tableContainer, buttonContainer) {
+        // html-Tabelle aufbereiten
+        // https://datatables.net/examples/api/select_row.html
+        $("#klipivotbut4").trigger("click");
+
+        $(tableContainer)
+            .append($("<table/>", {
+                    id: "klipivottbl",
+                    class: "display cell-border order-column",
+                    css: {
+                        width: "100%"
+                    }
+                })
+                .append($("<thead/>"))
+                .append($("<tbody/>"))
+            );
+        let fieldnames = Object.keys(records[0]);
+        $("#klipivottbl>thead")
+            .append($("<tr/>"));
+
+        $("#klipivottbl>thead>tr")
+            .append($("<th/>", {
+                html: "Nbr"
+            }));
+        fieldnames.forEach(function (fieldname, ifield) {
+            $("#klipivottbl>thead>tr")
+                .append($("<th/>", {
+                        html: fieldname
+                    })
+                    .append($("<label/>", {
+                        for: fieldname + "_filter"
+                    }))
+                    .append($("<input/>", {
+                        type: "text",
+                        id: fieldname + "_filter",
+                        class: "column-filter",
+                        "data-column": "" + ifield
+                    }))
+
+                );
+        });
+        let ihit = 0;
+        records.forEach(function (record, irec) {
+            // inclusions: <field>: [array of values for inclusion]
+            let doselect = true;
+            let infields = Object.keys(pivotData.inclusions);
+            for (let i = 0; i < infields.length; i++) {
+                let infield = infields[i];
+                if (pivotData.inclusions[infield].length > 0) {
+                    let value = record[infield];
+                    if (typeof value === "undefined" || value === null) {
+                        doselect = false;
+                        break;
+                    }
+                    if (pivotData.inclusions[infield].indexOf(value) < 0) {
+                        doselect = false;
+                        break;
+                    }
+                }
+            }
+            if (doselect === false) {
+                return; // skip
+            }
+            // exclusions: <field>: [array of values for exclusion]
+            let exfields = Object.keys(pivotData.exclusions);
+            for (let i = 0; i < exfields.length; i++) {
+                let exfield = exfields[i];
+                if (pivotData.exclusions[exfield].length > 0) {
+                    let value = record[exfield];
+                    if (typeof value === "undefined" || value === null) {
+                        doselect = false;
+                        continue;
+                    }
+                    if (pivotData.exclusions[exfield].indexOf(value) >= 0) {
+                        doselect = false;
+                        break;
+                    }
+                }
+            }
+            if (doselect === false) {
+                return; // skip
+            }
+            // hier übernehmen in Tabelle
+            $("#klipivottbl>tbody")
+                .append($("<tr/>"));
+            ihit++;
+            $("#klipivottbl>tbody>tr:last")
+                .append($("<td/>", {
+                    html: ihit
+                }));
+            fieldnames.forEach(function (fieldname, ifield) {
+                let value = record[fieldname];
+                if (typeof value === "undefined" || value === null) {
+                    value = "&nbsp";
+                }
+                $("#klipivottbl>tbody>tr:last")
+                    .append($("<td/>", {
+                        html: value
+                    }));
+            });
+        });
+
+        let tconfig = {};
+        let columnDefs = [];
+        let targets = [];
+        let columns = [];
+        fieldnames.forEach(function (fieldname, ifield) {
+            targets.push(ifield);
+        });
+        tconfig.columnDefs = [];
+        tconfig.columnDefs.push({
+            targets: targets,
+            orderable: true
+        });
+        let table;
+        tconfig.initComplete = function () {
+            var api = this.api();
+            // Add the input fields to the header
+            $('input.column-filter').on('keyup change', function () {
+                debugger;
+                let i = $(this).attr('data-column');
+                let v = $(this).val();
+                api.columns(i).search(v).draw();
+            });
+        };
+
+        tconfig.dom = 'B<"dt-buttons btn-group"f>rtip'; // 'Bfrtip';   // 'QBRfrtip';
+
+        tconfig.select = {
+            style: 'multi'
+        };
+
+        //tconfig.dom = 'B<"dt-buttons"f>rtip',
+        tconfig.buttons = [
+            'copy',
+            'csv',
+            {
+                text: 'Copy Selected',
+                title: 'Clipboard copy of rows with a checkbox selected',
+                action: function (e, dt, node, config) {
+                    e.preventDefault();
+                    let tableid = $(this.node()).attr("aria-controls"); //="r853303t"
+                    debugger;
+                    let seldata = klipivot.getSelectedData(tableid);
+                    if (seldata.rows.length === 0) {
+                        let table = $("#" + tableid).DataTable();
+                        table.rows().every(function () {
+                            $(this.node()).removeClass('selected');
+                            $(this.node()).addClass('selected');
+                        });
+                        seldata = klipivot.getSelectedData(tableid);
+                        klipivot.copyArraysToClipboard(seldata.fieldnames, seldata.rows);
+                    } else {
+                        klipivot.copyArraysToClipboard(seldata.fieldnames, seldata.rows);
+                    }
+                }
+            },
+            {
+                text: 'Copy to Matrix',
+                title: 'Transform selected to Matrix',
+                action: function (e, dt, node, config) {
+                    e.preventDefault();
+                    let tableid = $(this.node()).attr("aria-controls"); //="r853303t"
+                    let seldata = klipivot.getSelectedData(tableid);
+                    klipivot.copyArraysToMatrix(seldata.fieldnames, seldata.rows);
+                }
+            },
+            {
+                extend: 'colvis',
+                columns: ':not(:first-child)',
+                text: '<i class="fa fa-columns"></i> Columns',
+                attr: {
+                    class: 'btn btn-secondary'
+                },
+                init: function (api, node, config) {
+                    var $node = $(node);
+                    $node.removeClass('btn-secondary').addClass('btn-group');
+                    // Create individual column visibility buttons
+                    api.columns().indexes().each(function (index) {
+                        if (index > 0) {
+                            $node.append(`<button class="btn btn-secondary column-vis-btn" data-column="${index}">${api.column(index).header().textContent}</button>`);
+                        }
+                    });
+                }
+            }
+        ];
+
+        table = $('#klipivottbl').DataTable(tconfig);
+
+        // Entfernen der spans in der btn-group
+        let spans = $('#klipivottbl_wrapper').find(".dt-buttons").find("button.btn.btn-group span").toArray();
+        for (let i = 1; i >= 0; i--) {
+            $(spans[i]).remove();
+        }
+
+        $('#klipivottbl_wrapper').find(".dt-buttons").find("button.btn.btn-group").off('click');
+        // Handle column visibility button clicks
+        $('.column-vis-btn').on('click', function (e) {
+            let that = this;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            var column = table.column($(this).data('column'));
+            column.visible(!column.visible());
+            $(this).toggleClass('active');
+            if ($(this).hasClass('active')) {
+                $(that).css("background-color", "yellow");
+            } else {
+                $(that).css("background-color", "buttonface");
+            }
+        });
+        $(document).on('click', '#klipivottbl tbody tr', function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            e.currentTarget.classList.toggle('selected');
+        });
+    };
+
+    /**
+     * klipivot.getSelectedData - selektierte Spalten und Zeilen werden übernommen
+     * wenn keine Zeilen selektiert wurden, werden die ersten 5 Zeilen genommen
+     * @param {*} tableid 
+     * @returns { fieldnames, rows } jeweils als arrays
+     */
+    klipivot.getSelectedData = function (tableid) {
+        let headerfields = [];
+        let ths = $("#" + tableid).find("thead").find("th").toArray();
+        ths.forEach(function (th, ith) {
+            headerfields.push($(th).text());
+        });
+        let dt = $("#" + tableid).DataTable();
+        //let rows = dt.rows('.selected').nodes().toArray();
+        let rows = dt.rows('.selected').nodes();
+        let datarows = [];
+        //rows.forEach(function (row, irow) {
+        $(rows).each(function (irow, row) {
+            let columns = $(row).children().toArray();
+            let datarow = [];
+            columns.forEach(function (column, icol) {
+                datarow.push($(column).text());
+            });
+            datarows.push(datarow);
+        });
+        return {
+            fieldnames: headerfields,
+            rows: datarows
+        };
+    };
+
+
+    // Function to generate dropdown options
+    function getDropdownOptions(data, columnIndex) {
+        var options = '<select class="column-filter" data-column="' + columnIndex + '">';
+        options += '<option value="">All</option>';
+        options += '<option value="' + data + '">' + data + '</option>';
+        options += '</select>';
+        return options;
+    }
 
     /**
      * klipivot.getCookie - Cookie-String mit name holen
@@ -1423,6 +1907,106 @@
     // Example usage
     // setCookie('myString', 'This is a sample string', 30); // Stores the string for 30 days
 
+    klipivot.initUI = function () {
+        if ($("body").find("nav").length === 0) {
+            $("body")
+                .prepend($("<nav/>", {
+                    class: "navbar navbar-brand header  sticky-top navbar-light bg-light",
+                    css: {
+                        "background-color": "#e3f2fd;"
+                    }
+                }));
+        }
+        $("nav")
+            .append($("<div/>", {
+                    css: {
+                        float: "left"
+                    }
+                })
+                .append($("<button/>", {
+                    class: "btn btn-danger newmessages",
+                    title: "Nachrichten",
+                    html: "0",
+                    css: {
+                        float: "left",
+                        "margin-left": "20px"
+                    },
+                    click: function (evt) {
+                        evt.preventDefault();
+                        kla6900.showMessages();
+                    }
+                }))
+                .append($("<button/>", {
+                    class: "btn btn-info klistorage",
+                    html: "&#x1F50D;", // U+1F50D
+                    title: "Storage",
+                    css: {
+                        float: "left",
+                        "margin-left": "20px"
+                    },
+                    click: function (evt) {
+                        evt.preventDefault();
+                        async function hello() {
+                            // https://web.dev/storage-for-the-web/
+                            if (navigator.storage && navigator.storage.estimate) {
+                                const quota = await navigator.storage.estimate();
+                                // quota.usage -> Number of bytes used.
+                                // quota.quota -> Maximum number of bytes available.
+                                let smsg = "Available Storage for IndexedDB etc.";
+                                let percentageUsed = (quota.usage / quota.quota) * 100;
+                                percentageUsed = percentageUsed.toLocaleString('de-DE', {
+                                    minimumFractionDigits: 2
+                                });
+                                smsg += "\nYou've used " + percentageUsed + "% of the available storage.";
+                                let remaining = quota.quota - quota.usage;
+                                remaining = remaining.toLocaleString('de-DE', {
+                                    minimumFractionDigits: 0
+                                });
+                                smsg += "\nYou can write up to " + remaining + " more bytes.";
+                                smsg += "\nFor technical reasons this information may be unsecure";
+                                alert(smsg);
+                            } else {
+                                alert("Storage Management not available");
+                            }
+                        }
+                        hello();
+                        return;
+                    }
+                }))
+                .append($("<span/>", {
+                    class: "klishorttitle",
+                    css: {
+                        "margin-left": "10px",
+                        "font-weight": "bold"
+                    },
+                    html: "&nbsp;",
+                }))
+                .append($("<span/>", {
+                    class: "klimessage",
+                    css: {
+                        "margin-left": "10px",
+                        //display: "inline-block",
+                        display: "table-cell",
+                        width: "100%",
+                        /*-ms-word-wrap: normal;*/
+                        "word-wrap": "break-word"
+                    },
+                    html: "&nbsp;",
+                }))
+            );
+    };
+
+    klipivot.putMessage = function (message, severity) {
+        if (typeof severity === "undefined") {
+            severity = 1;
+        }
+        $(".klimessage").html(message);
+        if (typeof severity !== "undefined" && severity > 1) {
+            $(".klimessage").css("background-color", "pink");
+        } else {
+            $(".klimessage").css("background-color", "white");
+        }
+    };
 
 
     /**
